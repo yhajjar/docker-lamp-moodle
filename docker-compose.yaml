@@ -1,0 +1,32 @@
+services:
+  db:
+    container_name: mysql
+    image: mysql:8.4.5
+    restart: always
+    environment:
+      MYSQL_DATABASE: "${MYSQL_DATABASE}"
+      MYSQL_USER: "${MYSQL_USER}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+    volumes:
+      - ./db:/var/lib/mysql
+    ports:
+      - '3306:3306'
+  server:
+    container_name: apache
+    build:
+      context: .
+      dockerfile: Dockerfile.apachephp
+    volumes:
+      - ./src:/var/www/html
+      - ./src/moodledata:/var/www/html/moodledata:rw
+    ports:
+      - "${HTTP_PORT}:80"
+    depends_on:
+      - db
+    environment:
+      DB_HOST: "db"
+      DB_NAME: "${MYSQL_DATABASE}"
+      DB_USER: "${MYSQL_USER}"
+      DB_PASSWORD: "${MYSQL_PASSWORD}"
+      HTTP_PORT: "${HTTP_PORT}"
