@@ -1,3 +1,10 @@
 
 .env
 db/*
+src/moodle/.git/*
+src/moodle/moodle.git/*
+src/moodledata/*
+!src/moodledata/readme
+src/moodle/*
+!src/moodle/readme
+!src/moodle/config-dev.php
