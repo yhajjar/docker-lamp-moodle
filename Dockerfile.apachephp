@@ -35,7 +35,13 @@ RUN echo 'max_input_vars = 5000' >> /usr/local/etc/php/conf.d/docker-php-maxinpu
 RUN usermod -u 1000 www-data
 
 # Install Composer is needed
-# RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+# extensions recomended for PHPUnit
+RUN pecl install pcov \ 
+    && docker-php-ext-enable pcov 
+
+RUN apt-get install php-xdebug
 
 # CMD echo "Apache is listening on port ${HTTP_PORT}"
 
