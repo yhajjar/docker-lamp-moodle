@@ -8,3 +8,4 @@ src/moodledata/*
 src/moodle/*
 !src/moodle/readme
 !src/moodle/config-dev.php
+src/moodledataphpunit/*
