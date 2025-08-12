@@ -10,5 +10,5 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_groupmanager'; // Full name of the plugin (used for diagnostics).
-$plugin->version  = 2025070206;    // The current module version (Date: YYYYMMDDXX).
+$plugin->version  = 2025080813;    // The current module version (Date: YYYYMMDDXX).
 $plugin->requires = 2025040800;    // Requires this Moodle version.
