@@ -1,32 +1,56 @@
+version: "3.9"
+
 services:
-  db:
-    container_name: mysql
-    image: mysql:8.4.5
-    restart: always
-    environment:
-      MYSQL_DATABASE: "${MYSQL_DATABASE}"
-      MYSQL_USER: "${MYSQL_USER}"
-      MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
-      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
-    volumes:
-      - ./db:/var/lib/mysql
-    ports:
-      - '3306:3306'
-  server:
-    container_name: apache
+  web:
     build:
       context: .
       dockerfile: Dockerfile.apachephp
-    volumes:
-      - ./src:/var/www/html
-      - ./src/moodledata:/var/www/html/moodledata:rw
-    ports:
-      - "${HTTP_PORT}:80"
     depends_on:
       - db
+    # Coolify will expose this service via its proxy (assign a domain to "web")
     environment:
-      DB_HOST: "db"
-      DB_NAME: "${MYSQL_DATABASE}"
-      DB_USER: "${MYSQL_USER}"
-      DB_PASSWORD: "${MYSQL_PASSWORD}"
-      HTTP_PORT: "${HTTP_PORT}"
+      # DB connection for Moodle
+      DB_HOST: db
+      DB_NAME: ${MARIADB_DATABASE:?moodle}
+      DB_USER: ${MARIADB_USER:?moodle}
+      DB_PASSWORD: ${MARIADB_PASSWORD:?change_me}
+      # Moodle's public URL (set this in Coolify)
+      MOODLE_URL: ${MOODLE_URL:?https://moodle5.myapps.mylabs.click}
+    working_dir: /var/www/html
+    volumes:
+      # Your repo's code (contains src/moodle and moodledata)
+      - ./src:/var/www/html
+      # Persist moodledata outside the repo
+      - moodledata:/var/www/html/moodledata
+      # Apache vhost: serve the subfolder /moodle as the site root
+      - ./apache-site.conf:/etc/apache2/sites-available/000-default.conf:ro
+      # Extra PHP settings for Moodle 5
+      - ./php.ini:/usr/local/etc/php/conf.d/zz-moodle.ini:ro
+      # Silence the ServerName warning
+      - ./server-name.conf:/etc/apache2/conf-available/servername.conf:ro
+    command: bash -lc "a2enmod rewrite && a2enconf servername && apache2-foreground"
+
+  db:
+    image: mariadb:10.11
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MARIADB_DATABASE: ${MARIADB_DATABASE:?moodle}
+      MARIADB_USER: ${MARIADB_USER:?moodle}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:?change_me}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?root_change_me}
+    volumes:
+      - dbdata:/var/lib/mysql
+
+  cron:
+    # Moodle's cron (required)
+    image: php:8.3-cli
+    depends_on: [web]
+    working_dir: /var/www/html/moodle
+    volumes:
+      - ./src:/var/www/html:ro
+      - moodledata:/var/www/html/moodledata
+    command: /bin/sh -lc 'while true; do php admin/cli/cron.php; sleep 60; done'
+
+volumes:
+  moodledata:
+  dbdata:
